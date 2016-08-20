@@ -1,4 +1,5 @@
 ---
+# autor: Radchenko Vitalii (vitaliymichailovich@gmail.com)
 - hosts: j3
   vars:
     my_dir: /etc
