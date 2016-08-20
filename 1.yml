@@ -1,11 +1,35 @@
 ---
 # autor: Radchenko Vitalii (vitaliymichailovich@gmail.com) 
 - hosts: j1
+  vars:
+    address_1: 192.168.122.214
+    address_2: 192.168.122.126
+
   tasks:
     - name: Disable selinux
       command: /sbin/setenforce 0
 
-    - name: Install libselinux-python
+    - name: Install | MySQL-python
+      yum:
+        name: MySQL-python
+        state: latest
+
+    - name: Install | libselinux-python
+      yum:
+        name: libselinux-python
+        state: latest
+
+    - name: MySQL | Present
+      yum:
+        name: http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
+        state: present
+
+    - name: MySQL | Client Installing
+      yum:
+        name: mysql
+        state: latest
+
+    - name: Install | libselinux-python
       yum:
         name: libselinux-python
         state: latest

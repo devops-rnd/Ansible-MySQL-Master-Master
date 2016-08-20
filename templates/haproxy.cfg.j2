@@ -1,96 +1,72 @@
-#---------------------------------------------------------------------
-# Example configuration for a possible web application.  See the
-# full configuration options online.
 #
-#   http://haproxy.1wt.eu/download/1.4/doc/configuration.txt
+# /etc/haproxy/haproxy.cfg
 #
-#---------------------------------------------------------------------
 
 #---------------------------------------------------------------------
 # Global settings
 #---------------------------------------------------------------------
 global
-    # to have these messages end up in /var/log/haproxy.log you will
-    # need to:
-    #
-    # 1) configure syslog to accept network log events.  This is done
-    #    by adding the '-r' option to the SYSLOGD_OPTIONS in
-    #    /etc/sysconfig/syslog
-    #
-    # 2) configure local2 events to go to the /var/log/haproxy.log
-    #   file. A line like the following can be added to
-    #   /etc/sysconfig/syslog
-    #
-    #    local2.*                       /var/log/haproxy.log
-    #
-    log         127.0.0.1 local2
+  # to have these messages end up in /var/log/haproxy.log you will
+  # need to:
+  #
+  # 1) configure syslog to accept network log events.  This is done
+  #    by adding the '-r' option to the SYSLOGD_OPTIONS in
+  #    /etc/sysconfig/syslog
+  #
+  # 2) configure local2 events to go to the /var/log/haproxy.log
+  #   file. A line like the following can be added to
+  #   /etc/sysconfig/syslog
+  #
+  #    local2.*                       /var/log/haproxy.log
+  #
+  log         127.0.0.1 local2
 
-    chroot      /var/lib/haproxy
-    pidfile     /var/run/haproxy.pid
-    maxconn     4000
-    user        haproxy
-    group       haproxy
-    daemon
+  chroot      /var/lib/haproxy
+  pidfile     /var/run/haproxy.pid
+  maxconn     1020   # See also: ulimit -n
+  user        haproxy
+  group       haproxy
+  daemon
 
-    # turn on stats unix socket
-    stats socket /var/lib/haproxy/stats
+  # turn on stats unix socket
+  stats socket /var/lib/haproxy/stats.sock mode 600 level admin
+  stats timeout 2m
 
 #---------------------------------------------------------------------
-# common defaults that all the 'listen' and 'backend' sections will
+# common defaults that all the 'frontend' and 'backend' sections will
 # use if not designated in their block
 #---------------------------------------------------------------------
 defaults
-    mode                    http
-    log                     global
-    option                  httplog
-    option                  dontlognull
-    option http-server-close
-    option forwardfor       except 127.0.0.0/8
-    option                  redispatch
-    retries                 3
-    timeout http-request    10s
-    timeout queue           1m
-    timeout connect         10s
-    timeout client          1m
-    timeout server          1m
-    timeout http-keep-alive 10s
-    timeout check           10s
-    maxconn                 3000
+  mode    tcp
+  log     global
+  option  dontlognull
+  option  redispatch
+  retries                   3
+  timeout queue             45s
+  timeout connect           5s
+  timeout client            1m
+  timeout server            1m
+  timeout check             10s
+  maxconn                   1020
 
 #---------------------------------------------------------------------
-# main frontend which proxys to the backends
+# HAProxy statistics backend
 #---------------------------------------------------------------------
-frontend  main *:5000
-    acl url_static       path_beg       -i /static /images /javascript /stylesheets
-    acl url_static       path_end       -i .jpg .gif .png .css .js
+listen haproxy-monitoring *:80
+  mode    http
+  stats   enable
+  stats   show-legends
+  stats   refresh           5s
+  stats   uri               /
+  stats   realm             Haproxy\ Statistics
+  stats   auth              root:root
+  stats   admin             if TRUE
+  
+frontend haproxy1   # change on 2nd HAProxy
+  bind    *:3306
+  default_backend           mysql
 
-    use_backend static          if url_static
-
-frontend myapp *:3306
-    #bind *:3306
-    acl url_myapp path_beg /myapp
-    use_backend myapp if url_myapp
-    default_backend myapp
-
-#---------------------------------------------------------------------
-# static backend for serving up images, stylesheets and such
-#---------------------------------------------------------------------
-backend static
-    balance     roundrobin
-    server      static 127.0.0.1:4331 check
-
-#---------------------------------------------------------------------
-# round robin balancing between the various backends
-#---------------------------------------------------------------------
-backend app
-    balance     roundrobin
-    server  app1 127.0.0.1:5001 check
-    server  app2 127.0.0.1:5002 check
-    server  app3 127.0.0.1:5003 check
-    server  app4 127.0.0.1:5004 check
-
-# App
-backend myapp
-    balance	roundrobin
-    server  my1	192.168.122.214:3306 check
-    server  my2	192.168.122.126:3306 check
+backend mysql
+  balance roundrobin
+  server  nodeA             {{ address_1 }}:3306 maxconn 151 check
+  server  nodeB             {{ address_2 }}:3306 maxconn 151 check
