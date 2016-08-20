@@ -51,5 +51,10 @@ Will configure to work Master-Master replication.
 3.8 "inventory" - inventory file
 3.9 "site.yml" - yaml file which includ all configuration files
 
-4. Command:
-After making all configuration do command: "ansible-playbook site.yml -i inventory -vv" and you will have a three servers.
+4. Commands:
+4.1 After making all configuration do command: "ansible-playbook site.yml -i inventory -vv" and you will have a three servers.
+
+5. Addition:
+5.1 By degault HAProxy has control pannel on ip-address/haproxy server name. Access: root/root.
+5.2 Command to check balancing: mysql -h 192.168.122.200 -u replicator_a -p -e "show variables like 'server_id'"
+Instead of 192.168.122.200 ip address of your HAProxy.
