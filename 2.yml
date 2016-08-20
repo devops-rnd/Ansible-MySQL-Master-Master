@@ -1,0 +1,99 @@
+---
+- hosts: j2
+  vars:
+    my_dir: /etc
+    server_id: 2
+    db: replica
+    user: replicator
+    password: replicator_pass
+    address: 192.168.122.126
+
+  tasks:
+    - name: Install | libselinux-python
+      yum:
+        name: libselinux-python
+        state: latest
+
+    - name: Install | MySQL-python
+      yum:
+        name: MySQL-python
+        state: latest
+
+    - name: Disable selinux
+      command: /sbin/setenforce 0
+
+    - name: MySQL | Present
+      yum:
+        name: http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm 
+        state: present
+
+    - name: MySQL | Installing
+      yum:
+        name: mysql-server
+        state: latest
+
+    - name: MySQL | Starting & Enabling
+      service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: MySQL | Create mysql folder
+      file:
+        path: /var/log/mysql
+        state: directory
+        mode: 0755
+        owner: mysql
+        group: mysql
+
+    - name: MySQL | copy my.cnf.j2
+      template:
+        src: "templates/my.cnf.j2"
+        dest: "{{ my_dir }}/my.cnf"
+
+    - name: MySQL | Restarting
+      service:
+        name: mysqld
+        state: restarted
+
+#    - name: "MySQL | Create database"
+#      mysql_db:
+#        name: "{{ db }}"
+#        state: present
+
+    - name: MySQL | Create replication user
+      mysql_user:
+        name: "{{ user }}"
+        password: "{{ password }}"
+        host: "localhost"
+        priv: "*.*:SUPER,REPLICATION CLIENT"
+        state: present
+
+    - name: MySQL | Create user
+      mysql_user:
+        name: "{{ user }}_a" 
+        password: "{{ password }}"
+        host: "%"
+        priv: "*.*:All,GRANT"
+        state: present
+
+#    - name: "MySQL | Master status"
+#      mysql_replication:
+#        mode: getmaster
+
+#    - name: MySQL | Stop Slave
+#      mysql_replication:
+#        mode: stopslave
+
+#    - name: MySQL | Change Master
+#      mysql_replication:
+#        mode: changemaster
+#        master_host: {{ address }}
+#        master_user: {{ user }}
+#        master_password: {{ password }}
+#        master_log_file: mysql-bin.000001
+#        master_log_pos: 120
+
+#    - name: MySQL | Start Slave
+#      mysql_replication:
+#        mode: startslave

@@ -1,0 +1,52 @@
+---
+- hosts: j3
+  vars:
+    db: replica
+    user: replicator
+    password: replicator_pass
+    address_j2: 192.168.122.214
+  tasks:
+    - name: "MySQL | Get master file and position | j2"
+      mysql_replication:
+        login_host: "{{ address_j2 }}"
+        login_user: "{{ user }}_a"
+        login_password: "{{ password }}"
+        mode: getmaster
+      register: mysql_repl_j2
+    - name: "MySQL | Change Master Status | j3"
+      command: "
+        /usr/bin/mysql -u root -e
+        \"
+        STOP SLAVE;
+        CHANGE MASTER TO MASTER_HOST='{{ address_j2 }}', MASTER_USER='{{ user }}', MASTER_PASSWORD='{{ password }}', MASTER_LOG_FILE='{{ mysql_repl_j2.File }}', MASTER_LOG_POS = {{ mysql_repl_j2.Position }};
+        START SLAVE;
+        \"
+      "
+
+- hosts: j2
+  vars:
+    db: replica
+    user: replicator
+    password: replicator_pass
+    address_j3: 192.168.122.126
+  tasks:
+    - name: "MySQL | Get master file and position | j3"
+      mysql_replication:
+        login_host: "{{ address_j3 }}"
+        login_user: "{{ user }}_a"
+        login_password: "{{ password }}"
+        mode: getmaster
+      register: mysql_repl_j3
+    - name: "MySQL | Change Master Status | j2"
+      command: "
+        /usr/bin/mysql -u root -e
+        \"
+        STOP SLAVE;
+        CHANGE MASTER TO MASTER_HOST='{{ address_j3 }}', MASTER_USER='{{ user }}', MASTER_PASSWORD='{{ password }}', MASTER_LOG_FILE='{{ mysql_repl_j3.File }}', MASTER_LOG_POS = {{ mysql_repl_j3.Position }};
+        START SLAVE;
+        \"
+      "
+    - name: "MySQL | Create database"
+      mysql_db:
+        name: "{{ db }}"
+        state: present

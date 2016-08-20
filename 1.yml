@@ -1,0 +1,29 @@
+---
+- hosts: j1
+  tasks:
+    - name: Disable selinux
+      command: /sbin/setenforce 0
+
+    - name: Install libselinux-python
+      yum:
+        name: libselinux-python
+        state: latest
+
+    - name: HAProxy | Installing
+      yum:
+        name: haproxy
+        state: latest
+
+    - name: HAProxy | Starting & Enabling
+      service:
+        name: haproxy
+        state: started
+        enabled: yes
+
+    - template: src=templates/haproxy.cfg.j2 dest=/etc/haproxy/haproxy.cfg
+      tags: haproxy
+
+    - name: HAProxy | Restarting
+      service: 
+        name: haproxy
+        state: restarted
