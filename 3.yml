@@ -76,21 +76,3 @@
         host: "%"
         priv: "*.*:All,GRANT"
         state: present
-
-#    - name: MySQL | Stop Slave
-#      mysql_replication:
-#        mode: stopslave
-
-#    - name: MySQL | Change Master
-#      mysql_replication:
-#        mode: changemaster
-#        master_host: "{{ address }}"
-#        master_user: "{{ user }}"
-#        master_password: "{{ password }}"
-#        master_log_file: "{{ mysql_repl_stat.File }}"
-#        master_log_pos: "{{ mysql_repl_stat.Position }}"
-#      ignore_errors: true
-
-#    - name: MySQL | Start Slave
-#      mysql_replication:
-#        mode: startslave
